@@ -12,8 +12,8 @@ struct AddNewToDoView: View {
     @State var description = ""
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
-    @State private var showAlert = false
-    @State private var alertMessage = ""
+    @ObservedObject var vm = CoreDataViewModel()
+
     
     var body: some View {
         ZStack{
@@ -65,7 +65,8 @@ struct AddNewToDoView: View {
                 }
                 
                 Button {
-                    addItem()
+                    vm.addItem(viewContext: viewContext, title: title, description: description, dismiss: dismiss)
+                    
                 } label: {
                     Text ("save")
                         .font(.system(size: 23, weight: .bold))
@@ -78,30 +79,8 @@ struct AddNewToDoView: View {
                 }
             }
         }
-        .alert(isPresented: $showAlert, content: {
-            Alert(title: Text("Ops"), message: Text(alertMessage), dismissButton: .cancel())
+        .alert(isPresented: $vm.showAlert, content: {
+            Alert(title: Text("Ops"), message: Text(vm.alertMessage), dismissButton: .cancel())
         })
-    }
-    func addItem() {
-        withAnimation {
-            let newItem = Item(context: viewContext)
-            newItem.toDoName = title
-            newItem.toDoDescription = description
-            newItem.status = false
-            newItem.timestamp = Date()
-
-            do {
-                if !title.isEmpty {
-                    try viewContext.save()
-                    dismiss()
-                } else {
-                     showAlert = true
-                     alertMessage = "The title could't be empty"
-                }
-            } catch {
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
-        }
     }
 }

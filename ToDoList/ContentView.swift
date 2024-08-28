@@ -12,8 +12,10 @@ struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(entity: Item.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: false)], animation: .none)
     private var items: FetchedResults<Item>
+    
     @AppStorage("getData") var getData = true
     @StateObject var networkManager = NetworkManager()
+    @ObservedObject var vm = CoreDataViewModel()
     @State private var isEditing = false
     @State private var shouldShowAddView = false
     @State private var toDo = [ToDo]()
@@ -37,7 +39,7 @@ struct ContentView: View {
                                     HStack {
                                         Spacer()
                                         Button {
-                                            deleteItem(item)
+                                            vm.deleteItem(item, viewContext: viewContext)
                                         } label: {
                                             Image(systemName: "minus.circle.fill")
                                                 .frame(width: 30, height: 30)
@@ -93,7 +95,7 @@ struct ContentView: View {
                         switch result {
                         case .success(let toDos):
                             for todo in toDos {
-                                saveToCoreData(todo: todo)
+                                vm.saveToCoreData(todo: todo, viewContext: viewContext)
                             }
                         case .failure(let error):
                             print(error)
@@ -102,6 +104,7 @@ struct ContentView: View {
                             
                         }
                     }
+                    
                 }
             }
         }
@@ -113,32 +116,8 @@ struct ContentView: View {
         }
     }
     
-    private func saveToCoreData(todo: ToDo) {
-        let newItem = Item(context: viewContext)
-        newItem.toDoDescription = todo.todo
-        newItem.status = todo.completed
-        newItem.timestamp = Date()
-        
-        do {
-            try viewContext.save()
-            getData = false
-        } catch {
-            print("Failed to save data to Core Data: \(error.localizedDescription)")
-        }
-    }
     
-    private func deleteItem(_ item: Item) {
-        withAnimation {
-            viewContext.delete(item)
 
-            do {
-                try viewContext.save()
-            } catch {
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
-        }
-    }
 }
 
 

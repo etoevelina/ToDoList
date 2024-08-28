@@ -15,8 +15,8 @@ struct DetailView: View {
     @State private var name: String
     @State private var description: String
     @State private var completed: Bool
-    @State private var showAlert = false
-    @State private var alertMessage = ""
+    @ObservedObject var vm = CoreDataViewModel()
+
     
     init(item: Item) {
         self._item = State(initialValue: item)
@@ -66,8 +66,7 @@ struct DetailView: View {
         .navigationTitle("Detail View")
         .toolbar {
                 Button {
-                    newData()
-                    
+                    vm.newData(item: item, viewContext: viewContext, name: name, description: description, completed: completed, dismiss: dismiss)
                 } label: {
                     Text("Save")
                 }
@@ -79,26 +78,8 @@ struct DetailView: View {
                 }
         }
         .background(Color(red: 0.9, green: 0.98, blue: 0.96))
-        .alert(isPresented: $showAlert, content: {
-            Alert(title: Text("Ops"), message: Text(alertMessage), dismissButton: .cancel())
+        .alert(isPresented: $vm.showAlert, content: {
+            Alert(title: Text("Ops"), message: Text(vm.alertMessage), dismissButton: .cancel())
         })
-    }
-    private func newData() {
-        let id = item.objectID
-        
-        do {
-            if let todo = try viewContext.existingObject(with: id) as? Item {
-                todo.toDoName = name
-                todo.toDoDescription = description
-                todo.status = completed
-                try viewContext.save()
-                dismiss()
-            }
-        } catch let error {
-            print(error)
-            showAlert = true
-            alertMessage = "\(error.localizedDescription)"
-            
-        }
     }
 }
